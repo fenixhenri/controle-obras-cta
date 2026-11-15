@@ -1244,7 +1244,7 @@ async function carregarEmpresa(){
   let pref='';try{pref=localStorage.getItem('cta_empresa')||''}catch(e){}
   const m=data.find(x=>x.empresa_id===pref)||data[0];empresaId=m.empresa_id;meuPapel=m.papel;window.ctaEmpresas=data;
   entrouNaEmpresa(m.empresas&&m.empresas.nome)}
-function entrouNaEmpresa(nome){try{localStorage.setItem('cta_empresa',empresaId)}catch(e){}window.ctaEmpresa={id:empresaId,nome,papel:meuPapel,email:usuario.email};fecharTela();resolverPronto()}
+function entrouNaEmpresa(nome){try{localStorage.setItem('cta_empresa',empresaId)}catch(e){}window.ctaEmpresa={id:empresaId,nome,papel:meuPapel,email:usuario.email};fecharTela();resolverPronto();carregarAssinatura()}
 
 /* ---------- banco de dados no formato que o programa já usa ---------- */
 function snapDoc(row,p){return{id:(p||row.path).split('/').slice(1).join('/'),exists:!!row,data:()=>row?JSON.parse(JSON.stringify(row.data||{})):{}}}
@@ -1259,13 +1259,13 @@ const store={
   doc:p=>({
     onSnapshot:(cb,err)=>{const o={p,run:async()=>{try{const{data,error}=await sb.from('docs').select('path,data').eq('empresa_id',empresaId).eq('path',p).maybeSingle();if(error)throw error;cb(snapDoc(data,p))}catch(e){err&&err(e)}}};ouvintes.push(o);ligarTempoReal();o.run();return()=>{const i=ouvintes.indexOf(o);if(i>=0)ouvintes.splice(i,1)}},
     get:async()=>{const{data,error}=await sb.from('docs').select('path,data').eq('empresa_id',empresaId).eq('path',p).maybeSingle();if(error)throw error;return snapDoc(data,p)},
-    set:async d=>{const{error}=await sb.from('docs').upsert({empresa_id:empresaId,path:p,data:d,atualizado_em:new Date().toISOString()});if(error)throw error},
-    delete:async()=>{const{error}=await sb.from('docs').delete().eq('empresa_id',empresaId).eq('path',p);if(error)throw error}})
+    set:async d=>{checarAtivo();const{error}=await sb.from('docs').upsert({empresa_id:empresaId,path:p,data:d,atualizado_em:new Date().toISOString()});if(error)throw error},
+    delete:async()=>{checarAtivo();const{error}=await sb.from('docs').delete().eq('empresa_id',empresaId).eq('path',p);if(error)throw error}})
 };
 
 /* ---------- arquivos ---------- */
 function novoNome(tipo){const a=new Uint8Array(16);crypto.getRandomValues(a);const h=[...a].map(x=>x.toString(16).padStart(2,'0')).join('');const ext=/pdf/.test(tipo||'')?'pdf':/png/.test(tipo||'')?'png':/json/.test(tipo||'')?'json':'jpg';return empresaId+'/'+h+'.'+ext}
-const assets={upload:async(blob,o)=>{const tipo=(o&&o.type)||blob.type||'image/jpeg',nome=novoNome(tipo);const{error}=await sb.storage.from('arquivos').upload(nome,blob,{contentType:tipo,upsert:false});if(error)throw error;return{id:nome,size:blob.size}}};
+const assets={upload:async(blob,o)=>{checarAtivo();const tipo=(o&&o.type)||blob.type||'image/jpeg',nome=novoNome(tipo);const{error}=await sb.storage.from('arquivos').upload(nome,blob,{contentType:tipo,upsert:false});if(error)throw error;return{id:nome,size:blob.size}}};
 
 /* ---------- downloads e usuário ---------- */
 const downloads={save:async({filename,data})=>{const b=data instanceof Blob?data:new Blob([data],{type:/\.html?$/i.test(filename)?'text/html':/\.csv$/i.test(filename)?'text/csv':/\.json$/i.test(filename)?'application/json':'application/octet-stream'});
@@ -1279,6 +1279,59 @@ window.ctaConvidar=async(email,papel)=>{const{error}=await sb.from('convites').i
 window.ctaMembros=async()=>{const[m,c]=await Promise.all([sb.from('membros').select('user_id,papel,email').eq('empresa_id',empresaId),sb.from('convites').select('id,email,papel').eq('empresa_id',empresaId)]);return{membros:m.data||[],convites:c.data||[]}};
 window.ctaTirarConvite=async id=>{await sb.from('convites').delete().eq('id',id)};
 window.ctaTirarMembro=async uid=>{const{error}=await sb.from('membros').delete().eq('empresa_id',empresaId).eq('user_id',uid);if(error)throw new Error(traduz(error))};
+
+/* ---------- assinatura: teste grátis, planos e bloqueio ---------- */
+const ZAP='5599981101697',PLANOS={essencial:['Essencial','R$ 99/mês'],completo:['Completo','R$ 149/mês']};
+let assin={ativo:true,plano:'teste',dias:14},souAdmin=false,avisouBloq=false;
+function diasAte(t){return t?Math.ceil((new Date(t)-Date.now())/864e5):null}
+function calcAssin(e){const pl=e&&e.plano||'teste',dt=diasAte(e&&e.teste_ate),dp=diasAte(e&&e.pago_ate);
+  if(souAdmin)return{ativo:true,plano:pl,admin:true};
+  if(pl==='essencial'||pl==='completo'){const ok=!e.pago_ate||dp>0;return{ativo:ok,plano:pl,dias:e.pago_ate?dp:null,vencido:!ok}}
+  if(pl==='teste'){const ok=dt>0;return{ativo:ok,plano:'teste',dias:dt,vencido:!ok}}
+  return{ativo:false,plano:pl,vencido:true}}
+function checarAtivo(){if(assin.ativo)return;if(!avisouBloq){avisouBloq=true;setTimeout(abrirAssinar,50)}const e=new Error('Modo consulta: assine o CTA para voltar a lançar.');e.code='bloqueado';throw e}
+async function carregarAssinatura(){try{const[a,b]=await Promise.all([sb.rpc('sou_admin'),sb.from('empresas').select('plano,teste_ate,pago_ate').eq('id',empresaId).maybeSingle()]);souAdmin=!!(a&&a.data);if(b&&!b.error&&b.data)assin=calcAssin(b.data)}catch(e){}faixa()}
+window.ctaAssinatura=()=>assin;
+function css(){if(document.getElementById('ctaAssCss'))return;const st=document.createElement('style');st.id='ctaAssCss';st.textContent=`
+#ctaFaixa{position:sticky;top:0;z-index:900;display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;padding:7px 12px;font:600 13px system-ui,sans-serif;text-align:center}
+#ctaFaixa.t{background:#fef3c7;color:#92400e}#ctaFaixa.v{background:#fee2e2;color:#991b1b}#ctaFaixa.ok{background:#dcfce7;color:#166534}
+#ctaFaixa button{border:0;border-radius:999px;padding:5px 12px;font:700 12px system-ui,sans-serif;cursor:pointer;background:#1e3a8a;color:#fff}
+#ctaFaixa button.adm{background:#7c3aed}
+.cta-ov{position:fixed;inset:0;z-index:2000;background:rgba(15,23,42,.55);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:16px}
+.cta-mod{background:#fff;border-radius:16px;max-width:560px;width:100%;padding:18px;font:14px system-ui,sans-serif;color:#0f172a;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.cta-mod h3{margin:0 0 6px;font-size:18px;color:#1e3a8a}.cta-mod .x{float:right;border:0;background:#f1f5f9;border-radius:8px;width:32px;height:32px;font-size:18px;cursor:pointer}
+.cta-pl{border:2px solid #e2e8f0;border-radius:12px;padding:12px;margin:10px 0}.cta-pl b{font-size:16px}.cta-pl .pr{float:right;font-weight:800;color:#166534}
+.cta-zap{display:block;text-align:center;background:#16a34a;color:#fff;border-radius:10px;padding:10px;font-weight:700;text-decoration:none;margin-top:8px}
+.cta-cli{border:1px solid #e2e8f0;border-radius:12px;padding:10px;margin:8px 0}.cta-cli .s{font-size:12px;color:#475569}
+.cta-cli .bt{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.cta-cli .bt button{border:0;border-radius:8px;padding:6px 9px;font:600 12px system-ui,sans-serif;cursor:pointer;background:#e0e7ff;color:#1e3a8a}
+.cta-cli .bt button.r{background:#fee2e2;color:#991b1b}.cta-cli .bt button.g{background:#dcfce7;color:#166534}
+.cta-tag{display:inline-block;border-radius:999px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:4px}.cta-tag.a{background:#dcfce7;color:#166534}.cta-tag.t{background:#fef3c7;color:#92400e}.cta-tag.v{background:#fee2e2;color:#991b1b}`;document.head.appendChild(st)}
+function faixa(){css();let f=document.getElementById('ctaFaixa');if(!f){f=document.createElement('div');f.id='ctaFaixa';document.body.insertBefore(f,document.body.firstChild)}
+  const adm=souAdmin?'<button class="adm" onclick="ctaPainelAdmin()">👑 Clientes</button>':'';let cls='',txt='';
+  if(assin.admin){cls='ok';txt='👑 Administrador do CTA'}
+  else if(!assin.ativo){cls='v';txt=assin.plano==='teste'?'🔒 Seu teste grátis terminou. Você pode ver tudo, mas para lançar precisa assinar.':assin.plano==='bloqueado'?'🔒 Acesso em modo consulta. Fale com o CTA para liberar.':'🔒 Assinatura vencida – modo consulta. Renove para voltar a lançar.'}
+  else if(assin.plano==='teste'){cls='t';txt=`🎁 Teste grátis: falta${assin.dias===1?'':'m'} ${assin.dias} dia${assin.dias===1?'':'s'}`}
+  else if(assin.dias!=null&&assin.dias<=5){cls='t';txt=`Plano ${PLANOS[assin.plano][0]}: vence em ${assin.dias} dia${assin.dias===1?'':'s'}`}
+  if(!txt&&!adm){f.style.display='none';return}
+  f.className=cls||'ok';f.style.display='flex';f.innerHTML=`<span>${txt}</span>${!assin.admin&&cls?'<button onclick="ctaAssinar()">'+(assin.plano==='teste'&&assin.ativo?'Ver planos':'Assinar')+'</button>':''}${adm}`}
+function ov(html){const d=document.createElement('div');d.className='cta-ov';d.innerHTML=`<div class="cta-mod"><button class="x">×</button>${html}</div>`;d.querySelector('.x').onclick=()=>d.remove();d.onclick=e=>{if(e.target===d)d.remove()};document.body.appendChild(d);return d}
+function abrirAssinar(){const E=window.ctaEmpresa||{},msgZ=pl=>encodeURIComponent(`Olá! Quero assinar o Controle de Obras CTA – plano ${pl}.\nEmpresa: ${E.nome||''}\nE-mail da conta: ${E.email||''}`);
+  ov(`<h3>Assinar o Controle de Obras CTA</h3><div style="color:#475569">${assin.ativo?'Escolha o plano para continuar depois do teste.':'Seus dados estão guardados. Assine para voltar a lançar.'}</div>
+    ${Object.entries(PLANOS).map(([k,[n,pr]])=>`<div class="cta-pl"><span class="pr">${pr}</span><b>${n}</b><div style="color:#475569;font-size:13px;margin-top:4px">${k==='essencial'?'Obras, medições, gastos, equipe, recibos, diário e relatórios.':'Tudo do Essencial + orçamento SINAPI, cronograma Gantt, curva ABC, fiscal e propostas.'}</div><a class="cta-zap" target="_blank" href="https://wa.me/${ZAP}?text=${msgZ(n)}">Assinar ${n} pelo WhatsApp</a></div>`).join('')}
+    <div style="font-size:12px;color:#64748b">Pagamento por Pix. A liberação é feita logo após a confirmação.</div>`)}
+window.ctaAssinar=abrirAssinar;
+const fdt=t=>t?new Date(t).toLocaleDateString('pt-BR'):'—';
+async function painelAdmin(){const d=ov('<h3>👑 Clientes do CTA</h3><div id="ctaCli">Carregando…</div>');const box=d.querySelector('#ctaCli');
+  const carregar=async()=>{const{data,error}=await sb.rpc('admin_empresas');if(error){box.textContent=traduz(error);return}
+    const st=c=>{const a=calcAssin.call(null,{...c});return a};
+    const L=data||[];const n=k=>L.filter(k).length,at=c=>(c.plano==='teste'?new Date(c.teste_ate)>new Date():(c.plano==='essencial'||c.plano==='completo')?(!c.pago_ate||new Date(c.pago_ate)>new Date()):false);
+    box.innerHTML=`<div style="color:#475569;margin-bottom:6px">${L.length} empresa(s) · ${n(c=>c.plano==='teste'&&at(c))} em teste · ${n(c=>(c.plano==='essencial'||c.plano==='completo')&&at(c))} pagantes · ${n(c=>!at(c))} em modo consulta</div>`+
+    L.map(c=>{const ativo=at(c),tag=c.plano==='teste'?(ativo?`<span class="cta-tag t">teste até ${fdt(c.teste_ate)}</span>`:'<span class="cta-tag v">teste vencido</span>'):c.plano==='bloqueado'?'<span class="cta-tag v">bloqueado</span>':ativo?`<span class="cta-tag a">${PLANOS[c.plano][0]}${c.pago_ate?' até '+fdt(c.pago_ate):' · sem vencimento'}</span>`:`<span class="cta-tag v">${PLANOS[c.plano][0]} vencido</span>`;
+      return `<div class="cta-cli"><b>${esc(c.nome)}</b>${tag}<div class="s">${esc(c.email||'')} · desde ${fdt(c.criado_em)} · ${c.membros} usuário(s) · ${c.docs} registro(s)</div>
+      <div class="bt"><button class="g" data-a="essencial|30" data-e="${c.id}">+30 dias Essencial</button><button class="g" data-a="completo|30" data-e="${c.id}">+30 dias Completo</button><button data-a="teste|7" data-e="${c.id}">+7 dias teste</button><button data-a="completo|0" data-e="${c.id}">Completo sem vencimento</button><button class="r" data-a="bloqueado|0" data-e="${c.id}">Bloquear</button></div></div>`}).join('');
+    box.querySelectorAll('button[data-a]').forEach(b=>b.onclick=async()=>{const[pl,di]=b.dataset.a.split('|');if(pl==='bloqueado'&&!confirm('Bloquear esta empresa? Ela fica só para consulta.'))return;b.disabled=true;const{error}=await sb.rpc('admin_plano',{p_empresa:b.dataset.e,p_plano:pl,p_dias:+di});if(error){alert(traduz(error));b.disabled=false;return}if(b.dataset.e===empresaId)await carregarAssinatura();carregar()})};
+  carregar()}
+window.ctaPainelAdmin=painelAdmin;
 
 /* ---------- início ---------- */
 async function iniciar(){
@@ -1361,7 +1414,7 @@ function setSync(){const c=$('syncChip'),t=$('syncTxt');if(!c)return;c.className
   t.textContent=semAcesso?'Sem conexão':erroSync?'Erro ao salvar':pendentes?'Salvando…':'Salvo na nuvem'}
 function enfileirar(path,fn){pendentes++;setSync();
   filas[path]=(filas[path]||Promise.resolve()).then(fn).then(()=>{erroSync=false},e=>{erroSync=true;
-    const msg=e&&e.code==='quota_exceeded'?'Espaço de armazenamento cheio.':e&&e.code==='invalid_argument'?'Você não tem permissão para alterar estes dados.':'Não foi possível salvar. Verifique a internet.';
+    const msg=e&&e.code==='bloqueado'?'Modo consulta: assine o CTA para voltar a lançar.':e&&e.code==='quota_exceeded'?'Espaço de armazenamento cheio.':e&&e.code==='invalid_argument'?'Você não tem permissão para alterar estes dados.':'Não foi possível salvar. Verifique a internet.';
     toast('⚠️ '+msg)}).finally(()=>{pendentes--;setSync()})}
 function cfgDados(){const c=db.config;return{empresa:c.empresa,categorias:c.categorias,faixa:c.faixa,cnpj:c.cnpj||'',banco:c.banco||'',conta:c.conta||'',pix:c.pix||'',bolEmpresa:c.bolEmpresa||'',equipe:Array.isArray(c.equipe)?c.equipe:[],backupAuto:c.backupAuto===true,ultimoBackup:c.ultimoBackup||'',pinHash:c.pinHash||'',pinSalt:c.pinSalt||'',pinEncHash:c.pinEncHash||'',pinEncSalt:c.pinEncSalt||'',encarregados:Array.isArray(c.encarregados)?c.encarregados:[],
   despFixas:Array.isArray(c.despFixas)?c.despFixas:[],despPag:c.despPag&&typeof c.despPag==='object'?c.despPag:{},retiradas:Array.isArray(c.retiradas)?c.retiradas:[],proLabore:+c.proLabore||0,diaProLabore:+c.diaProLabore||5,
