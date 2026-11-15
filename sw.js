@@ -1,5 +1,5 @@
 /* CTA – permite instalar como app e abrir mesmo com internet fraca (dados continuam no servidor) */
-const CACHE='cta-v1';
+const CACHE='cta-v2';
 const BASE=['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(BASE)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
