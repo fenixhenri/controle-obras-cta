@@ -1324,7 +1324,8 @@ const fdt=t=>t?new Date(t).toLocaleDateString('pt-BR'):'—';
 async function painelAdmin(){const d=ov('<h3>👑 Clientes do CTA</h3><div id="ctaCli">Carregando…</div>');const box=d.querySelector('#ctaCli');
   const carregar=async()=>{const{data,error}=await sb.rpc('admin_empresas');if(error){box.textContent=traduz(error);return}
     const st=c=>{const a=calcAssin.call(null,{...c});return a};
-    const L=data||[];const n=k=>L.filter(k).length,at=c=>(c.plano==='teste'?new Date(c.teste_ate)>new Date():(c.plano==='essencial'||c.plano==='completo')?(!c.pago_ate||new Date(c.pago_ate)>new Date()):false);
+    const eu=String(usuario&&usuario.email||'').toLowerCase(),L=(data||[]).filter(c=>String(c.email||'').toLowerCase()!==eu);const n=k=>L.filter(k).length,at=c=>(c.plano==='teste'?new Date(c.teste_ate)>new Date():(c.plano==='essencial'||c.plano==='completo')?(!c.pago_ate||new Date(c.pago_ate)>new Date()):false);
+    if(!L.length){box.innerHTML='<div style="color:#475569;padding:12px 0">Nenhum cliente ainda. Quando alguém criar conta no CTA, aparece aqui.</div>';return}
     box.innerHTML=`<div style="color:#475569;margin-bottom:6px">${L.length} empresa(s) · ${n(c=>c.plano==='teste'&&at(c))} em teste · ${n(c=>(c.plano==='essencial'||c.plano==='completo')&&at(c))} pagantes · ${n(c=>!at(c))} em modo consulta</div>`+
     L.map(c=>{const ativo=at(c),tag=c.plano==='teste'?(ativo?`<span class="cta-tag t">teste até ${fdt(c.teste_ate)}</span>`:'<span class="cta-tag v">teste vencido</span>'):c.plano==='bloqueado'?'<span class="cta-tag v">bloqueado</span>':ativo?`<span class="cta-tag a">${PLANOS[c.plano][0]}${c.pago_ate?' até '+fdt(c.pago_ate):' · sem vencimento'}</span>`:`<span class="cta-tag v">${PLANOS[c.plano][0]} vencido</span>`;
       return `<div class="cta-cli"><b>${esc(c.nome)}</b>${tag}<div class="s">${esc(c.email||'')} · desde ${fdt(c.criado_em)} · ${c.membros} usuário(s) · ${c.docs} registro(s)</div>
