@@ -4259,8 +4259,8 @@ function renderEncarregado(){if(!['material','diario'].includes(db.ui.encAba))db
   if(a==='presenca'){renderPresenca();const el=document.createElement('div');el.innerHTML=$('app').innerHTML.replace(abasEquipe(),'');[...el.querySelectorAll('section.card')].forEach(sc=>{if(/Presença do mês/.test(sc.querySelector('h2')?.textContent||''))sc.remove()});el.querySelectorAll('.pr-mesbox .btn').forEach(b=>b.remove());$('app').innerHTML=sair+tabs+el.innerHTML;return}
   if(a==='material'){db.ui.prodModo='obra';renderProdutividade();const el=document.createElement('div');el.innerHTML=$('app').innerHTML;
     const keep=[...el.querySelectorAll('section.card')].filter(s=>/Produtividade –|Material consumido|Lista de compras/.test(s.querySelector('h2')?.textContent||''));
-    keep.forEach(s=>s.querySelectorAll('.kpi-grid').forEach(k=>k.remove()));$('app').innerHTML=sair+tabs+keep.map(s=>s.outerHTML).join('');return}
-  const V=obrasVisiveis(),o=V.find(x=>x.id===db.ui.encObra)||V.find(x=>x.status!=='Concluída')||V[0];if(!o){$('app').innerHTML=sair+tabs;return}db.ui.obraId=o.id;
+    keep.forEach(s=>s.querySelectorAll('.kpi-grid').forEach(k=>k.remove()));$('app').innerHTML=sair+tabs+(keep.length&&obrasVisiveis().length?keep.map(s=>s.outerHTML).join(''):`<section class="card"><div class="vazio">🏗️ Nenhuma obra liberada para você ainda.<br>Peça ao responsável da empresa para cadastrar a obra e liberar o seu acesso a ela.</div></section>`);return}
+  const V=obrasVisiveis(),o=V.find(x=>x.id===db.ui.encObra)||V.find(x=>x.status!=='Concluída')||V[0];if(!o){$('app').innerHTML=sair+tabs+`<section class="card"><div class="vazio">🏗️ Nenhuma obra liberada para você ainda.<br>Peça ao responsável da empresa para cadastrar a obra e liberar o seu acesso a ela.</div></section>`;return}db.ui.obraId=o.id;
   $('app').innerHTML=sair+tabs+`<section class="card"><div class="fg"><label>Obra</label><select onchange="db.ui.encObra=this.value;render()">${opcoesObras(o.id)}</select></div></section><div id="abaConteudo"></div>`;renderDiario(o,$('abaConteudo'))}
 
 /* ================= PACOTE DA MEDIÇÃO ================= */
