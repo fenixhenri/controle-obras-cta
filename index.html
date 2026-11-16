@@ -1283,7 +1283,7 @@ window.ctaTirarMembro=async uid=>{const{error}=await sb.from('membros').delete()
 
 /* ---------- assinatura: teste grátis, planos e bloqueio ---------- */
 const ZAP='5599981101697',PLANOS={essencial:['Essencial','R$ 99/mês'],completo:['Completo','R$ 149/mês']};
-let assin={ativo:true,plano:'teste',dias:14},souAdmin=false,avisouBloq=false;
+let assin={ativo:true,plano:'teste',dias:7},souAdmin=false,avisouBloq=false;
 function diasAte(t){return t?Math.ceil((new Date(t)-Date.now())/864e5):null}
 function calcAssin(e){const pl=e&&e.plano||'teste',dt=diasAte(e&&e.teste_ate),dp=diasAte(e&&e.pago_ate);
   if(souAdmin)return{ativo:true,plano:pl,admin:true};
