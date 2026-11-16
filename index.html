@@ -1205,7 +1205,7 @@ function msg(t,erro){const m=document.getElementById('ctlMsg');if(m){m.textConte
 function traduz(e){const s=String(e&&(e.message||e.error_description)||e||'');
   if(/Invalid login/i.test(s))return 'E-mail ou senha incorretos.';if(/Email not confirmed/i.test(s))return 'Confirme seu e-mail: abra a mensagem que enviamos e toque no link.';
   if(/already registered|already been registered/i.test(s))return 'Esse e-mail já tem conta. Use "Entrar".';if(/Password should be/i.test(s))return 'A senha precisa ter pelo menos 6 caracteres.';
-  if(/rate limit/i.test(s))return 'Muitas tentativas. Espere alguns minutos e tente de novo.';if(/Failed to fetch|NetworkError/i.test(s))return 'Sem conexão com a internet.';return s||'Não foi possível concluir.'}
+  if(/limite_plano:/.test(s))return s.replace(/^.*limite_plano:\s*/,'');if(/rate limit/i.test(s))return 'Muitas tentativas. Espere alguns minutos e tente de novo.';if(/Failed to fetch|NetworkError/i.test(s))return 'Sem conexão com a internet.';return s||'Não foi possível concluir.'}
 
 function telaEntrar(modo){modo=modo||'entrar';
   const titulo={entrar:'Entrar',criar:'Criar conta grátis',esqueci:'Recuperar senha'}[modo];
@@ -1277,7 +1277,7 @@ const user={isOwner:async()=>meuPapel==='dono',canEdit:async()=>meuPapel!=='cont
 window.claude={use:async n=>{await pronto;if(n==='db')return store;if(n==='assets')return assets;if(n==='downloads')return downloads;if(n==='user')return user;return null}};
 
 /* ---------- convites (dono) ---------- */
-window.ctaConvidar=async(email,papel,obras)=>{const row={empresa_id:empresaId,email:String(email).trim().toLowerCase(),papel};if(Array.isArray(obras)&&obras.length)row.obras=obras;const{error}=await sb.from('convites').insert(row);if(error){if(/papel_check|check constraint/i.test(error.message||''))throw new Error('Para usar o papel Engenheiro, rode antes o arquivo de permissões no Supabase.');throw new Error(traduz(error))}return true};
+window.ctaConvidar=async(email,papel,obras)=>{await checarLimite(papel,email);const row={empresa_id:empresaId,email:String(email).trim().toLowerCase(),papel};if(Array.isArray(obras)&&obras.length)row.obras=obras;const{error}=await sb.from('convites').insert(row);if(error){if(/papel_check|check constraint/i.test(error.message||''))throw new Error('Para usar o papel Engenheiro, rode antes o arquivo de permissões no Supabase.');throw new Error(traduz(error))}return true};
 window.ctaObrasMembro=async(uid,obras)=>{const{error}=await sb.from('membros').update({obras:obras||[]}).eq('empresa_id',empresaId).eq('user_id',uid);if(error)throw new Error(traduz(error))};
 window.ctaMembros=async()=>{const[m,c]=await Promise.all([sb.from('membros').select('user_id,papel,email,obras').eq('empresa_id',empresaId),sb.from('convites').select('id,email,papel,obras').eq('empresa_id',empresaId)]);if(m.error||c.error){const[m2,c2]=await Promise.all([sb.from('membros').select('user_id,papel,email').eq('empresa_id',empresaId),sb.from('convites').select('id,email,papel').eq('empresa_id',empresaId)]);return{membros:m2.data||[],convites:c2.data||[]}}return{membros:m.data||[],convites:c.data||[]}};
 window.ctaTirarConvite=async id=>{await sb.from('convites').delete().eq('id',id)};
@@ -1295,6 +1295,22 @@ function calcAssin(e){const pl=e&&e.plano||'teste',dt=diasAte(e&&e.teste_ate),dp
 function checarAtivo(){if(assin.ativo)return;if(!avisouBloq){avisouBloq=true;setTimeout(abrirAssinar,50)}const e=new Error('Modo consulta: assine o CTA para voltar a lançar.');e.code='bloqueado';throw e}
 async function carregarAssinatura(){try{const[a,b]=await Promise.all([sb.rpc('sou_admin'),sb.from('empresas').select('plano,teste_ate,pago_ate').eq('id',empresaId).maybeSingle()]);souAdmin=!!(a&&a.data);if(b&&!b.error&&b.data)assin=calcAssin(b.data)}catch(e){}faixa();carregarLogo()}
 window.ctaAssinatura=()=>assin;
+/* ---------- plano Essencial: funções do Completo bloqueadas + limite de equipe ---------- */
+const LIM_ESS={engenheiro:2,encarregado:3},NOME_P={engenheiro:['engenheiro','engenheiros'],encarregado:['encarregado','encarregados']};
+const soEssencial=()=>!assin.admin&&assin.plano==='essencial';
+function cardCompleto(nome,desc){const msg=encodeURIComponent(`Olá! Quero mudar para o plano Completo do Controle de Obras CTA.\nEmpresa: ${(window.ctaEmpresa||{}).nome||''}`);
+  return `<div class="card" style="text-align:center;padding:26px 18px"><div style="font-size:42px">🔒</div><h3 style="margin:6px 0">${nome}</h3><div style="color:#475569;margin-bottom:6px">${desc}</div><div style="font-weight:700;color:#1e3a8a;margin-bottom:14px">Disponível no plano Completo</div><a href="https://wa.me/${ZAP}?text=${msg}" target="_blank" style="display:inline-block;background:#16a34a;color:#fff;border-radius:999px;padding:11px 20px;font-weight:700;text-decoration:none">Fazer upgrade pelo WhatsApp</a><div style="margin-top:10px"><a href="#" onclick="ctaAssinar();return false" style="color:#1e3a8a;font-size:13px">Ver planos e preços</a></div></div>`}
+const BLOQ_ABA={orc:['📐 Orçamento SINAPI','Monte o orçamento com a base SINAPI, BDI e curva ABC.'],crono:['🗓️ Cronograma Gantt','Cronograma físico-financeiro em barras, com avanço por etapa.']};
+function instalarPlano(){
+  [['renderOrcS','orc'],['renderCrono','crono']].forEach(([fn,k])=>{const orig=window[fn];if(typeof orig!=='function'||orig.__cta)return;window[fn]=function(o,box){if(soEssencial()&&box){box.innerHTML=cardCompleto(...BLOQ_ABA[k]);return}return orig.apply(this,arguments)};window[fn].__cta=1});
+  if(typeof window.renderFiscal==='function'&&!window.renderFiscal.__cta){const orig=window.renderFiscal;window.renderFiscal=function(){if(soEssencial()){const app=document.getElementById('app');if(app){app.innerHTML=cardCompleto('🧾 Fiscal','Notas fiscais, DAS e impostos do mês em um só lugar.');return}}return orig.apply(this,arguments)};window.renderFiscal.__cta=1}
+  if(typeof window.renderPropostas==='function'&&!window.renderPropostas.__cta){const orig=window.renderPropostas;window.renderPropostas=function(){if(soEssencial()){const app=document.getElementById('app');if(app){const ab=typeof abasEmpresa==='function'?abasEmpresa():'';app.innerHTML=ab+cardCompleto('📄 Propostas comerciais','Monte e imprima propostas com a sua logo para enviar aos clientes.');return}}return orig.apply(this,arguments)};window.renderPropostas.__cta=1}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',instalarPlano);else setTimeout(instalarPlano,0);
+async function checarLimite(papel,emailNovo){if(!soEssencial()||!LIM_ESS[papel])return;const{membros,convites}=await window.ctaMembros();const em=String(emailNovo||'').toLowerCase();
+  const n=[...membros,...convites].filter(x=>x.papel===papel&&String(x.email||'').toLowerCase()!==em).length;
+  if(n>=LIM_ESS[papel])throw new Error(`O plano Essencial permite até ${LIM_ESS[papel]} ${NOME_P[papel][1]}. Para cadastrar mais, mude para o plano Completo (sem limite).`)}
+
 /* ---------- logo da empresa (só planos pagos) ---------- */
 const podeLogo=()=>assin.admin||((assin.plano==='essencial'||assin.plano==='completo')&&assin.ativo);
 let logoPadrao=null,logoAtual='';
@@ -1333,7 +1349,7 @@ function faixa(){css();let f=document.getElementById('ctaFaixa');if(!f){f=docume
 function ov(html){const d=document.createElement('div');d.className='cta-ov';d.innerHTML=`<div class="cta-mod"><button class="x">×</button>${html}</div>`;d.querySelector('.x').onclick=()=>d.remove();d.onclick=e=>{if(e.target===d)d.remove()};document.body.appendChild(d);return d}
 function abrirAssinar(){css();const E=window.ctaEmpresa||{},msgZ=pl=>encodeURIComponent(`Olá! Quero assinar o Controle de Obras CTA – plano ${pl}.\nEmpresa: ${E.nome||''}\nE-mail da conta: ${E.email||''}`);
   ov(`<h3>Assinar o Controle de Obras CTA</h3><div style="color:#475569">${assin.ativo?'Escolha o plano para continuar depois do teste.':'Seus dados estão guardados. Assine para voltar a lançar.'}</div>
-    ${Object.entries(PLANOS).map(([k,[n,v]])=>{const m=Math.ceil(v/2)-1+(v%2?0:1),r=x=>'R$ '+x.toLocaleString('pt-BR');return `<div class="cta-pl"><b>${n}</b><div style="color:#475569;font-size:13px;margin-top:4px">${k==='essencial'?'Obras, medições, gastos, equipe, recibos, diário e relatórios – com a logo da sua empresa.':'Tudo do Essencial + orçamento SINAPI, cronograma Gantt, curva ABC, fiscal e propostas.'}</div>
+    ${Object.entries(PLANOS).map(([k,[n,v]])=>{const m=Math.ceil(v/2)-1+(v%2?0:1),r=x=>'R$ '+x.toLocaleString('pt-BR');return `<div class="cta-pl"><b>${n}</b><div style="color:#475569;font-size:13px;margin-top:4px">${k==='essencial'?'Obras, medições, boletim em Excel, gastos, equipe, recibos, caixa, diário e relatórios – com a logo da sua empresa. Até 2 engenheiros e 3 encarregados.':'Tudo do Essencial + orçamento SINAPI, cronograma Gantt, curva ABC, fiscal e propostas. Engenheiros e encarregados sem limite.'}</div>
       <div style="display:flex;gap:8px;margin-top:8px">
         <a class="cta-zap" style="flex:1;background:#e2e8f0;color:#0f172a;margin:0" target="_blank" href="https://wa.me/${ZAP}?text=${msgZ(n+' – mensal ('+r(v)+'/mês)')}"><div style="font-size:11px;font-weight:600">Mensal</div>${r(v)}/mês</a>
         <a class="cta-zap" style="flex:1;margin:0;position:relative" target="_blank" href="https://wa.me/${ZAP}?text=${msgZ(n+' – semestral com 50% de desconto ('+r(m)+'/mês, total '+r(m*6)+')')}"><span style="position:absolute;top:-9px;right:6px;background:#f59e0b;color:#fff;border-radius:999px;padding:1px 7px;font-size:10px">50% OFF</span><div style="font-size:11px;font-weight:600">6 meses</div>${r(m)}/mês<div style="font-size:10px;font-weight:600;opacity:.85">${r(m*6)} à vista</div></a>
