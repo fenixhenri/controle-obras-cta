@@ -4797,18 +4797,28 @@ async function perguntar(q){q=(q||$('asInput').value||'').trim();if(!q||assistBu
 function limparAssist(){if(assistCtl)try{assistCtl.abort()}catch(e){}assistHist=[];assistBusy=false;$('asEnviar').disabled=false;abrirAssistente()}
 
 /* ================= CONFIG ================= */
-function criarExemplo(){const h=hoje(),d=n=>addDias(h,-n),id=()=>novoId('x');const it1=id(),it2=id(),it3=id();
-  const o={id:novoId('obra'),nome:'EXEMPLO – Reforma Escola Centro',contratante:'CONSTRUTORA EXEMPLO LTDA',local:'Cidade - UF',valorContrato:48000,dataInicio:d(45),status:'Em andamento',obs:'Obra de exemplo: pode apagar quando quiser.',orcamento:{},
-    itens:[{id:it1,servico:'PINTURA ACRÍLICA PAREDE',un:'M2',qtd:4000,preco:6},{id:it2,servico:'EMASSAMENTO COM MASSA CORRIDA',un:'M2',qtd:2000,preco:5.5},{id:it3,servico:'PINTURA DE PISO',un:'M2',qtd:1000,preco:2.5}],
-    boletins:[{id:id(),numero:1,inicio:d(45),fim:d(16),qtds:{[it1]:1500,[it2]:1200},status:'Recebido'}],
-    medicoes:[{id:id(),data:d(40),descricao:'SINAL',status:'Recebido',valor:12000},{id:id(),data:d(15),descricao:'1ª medição',status:'Recebido',valor:9600},{id:id(),data:d(1),descricao:'2ª medição',status:'Pendente',valor:8500}],
-    gastos:[{id:id(),data:d(38),categoria:'Material',descricao:'Lixas, rolos e fita crepe',fornecedor:'Loja de tintas',qtd:1,unidade:'',valorUnit:0,valorTotal:420,pagamento:'PIX',temNF:false,numNF:'',obs:''},
-      {id:id(),data:d(30),categoria:'Mão de Obra',descricao:'Diárias – João Pintor',pessoa:'João Pintor (exemplo)',qtd:10,unidade:'diária',valorUnit:130,valorTotal:1300,pagamento:'PIX',tipoPag:'diaria',temNF:false,numNF:'',obs:''},
-      {id:id(),data:d(15),categoria:'Mão de Obra',descricao:'Diárias – João Pintor',pessoa:'João Pintor (exemplo)',qtd:12,unidade:'diária',valorUnit:130,valorTotal:1560,pagamento:'PIX',tipoPag:'diaria',temNF:false,numNF:'',obs:''},
-      {id:id(),data:d(10),categoria:'Combustível',descricao:'Gasolina',qtd:1,unidade:'',valorUnit:0,valorTotal:150,pagamento:'Dinheiro',temNF:false,numNF:'',obs:''}],
-    diario:[{id:id(),d:d(3),clima:'Sol',equipe:'2 pintores',ativ:'Emassamento das salas 1 a 4',ocor:'',fotos:[]},{id:id(),d:d(2),clima:'Sol',equipe:'2 pintores',ativ:'Pintura do corredor e da secretaria',ocor:'',fotos:[]}],
-    presencas:[],consumos:[],termos:[],ordem:Date.now()};
-  normalizarObra(o);db.obras.push(o);if(!db.config.equipe.some(p=>p.nome==='João Pintor (exemplo)'))db.config.equipe.push({id:novoId('pes'),nome:'João Pintor (exemplo)',funcao:'Pintor',tipoPag:'diaria',diaria:130,ativo:true,obra:o.id});
+function criarExemplo(){const h=hoje(),d=n=>addDias(h,-n),id=()=>novoId('x');
+  const mI=k=>{const t=new Date();t.setDate(1);t.setMonth(t.getMonth()-k);return t.toISOString().slice(0,10)},mF=k=>{const t=new Date();t.setDate(1);t.setMonth(t.getMonth()-k+1);t.setDate(0);return t.toISOString().slice(0,10)};
+  const I=[['SELADOR',1008.65,0.5],['MASSA CORRIDA',1300,2.5],['TEXTURA ACRÍLICA',1035.5,2.5],['TINTA ACRÍLICA',5044,3],['GRADIL (ESMALTE)',237,2.8]].map(([servico,qtd,preco])=>({id:id(),servico,un:'M2',qtd,preco}));
+  const Q=[[0,500,0,0,0],[1005.66,500,457,688,0],[2.99,300,78.5,1056,0],[0,0,0,900,0],[0,0,500,2400,237]];
+  const bol=Q.map((q,k)=>({id:id(),numero:k+1,inicio:mI(5-k),fim:mF(5-k),qtds:Object.fromEntries(I.map((it,j)=>[it.id,q[j]])),status:k<4?'Recebido':'Pendente'}));
+  const val=q=>Math.round(I.reduce((s,it,j)=>s+q[j]*it.preco,0)*100)/100;
+  const med=Q.map((q,k)=>({id:id(),data:addDias(mF(5-k),5),descricao:(k+1)+'ª medição',status:k<4?'Recebido':'Pendente',valor:val(q)}));
+  const G=(dd,categoria,descricao,valorTotal,extra)=>({id:id(),data:dd,categoria,descricao,fornecedor:'',qtd:1,unidade:'',valorUnit:0,valorTotal,pagamento:'PIX',temNF:false,numNF:'',obs:'',...(extra||{})});
+  const gastos=[G(addDias(mI(5),3),'Viagem de Funcionário','Passagem da equipe até a obra',468),G(addDias(mI(5),10),'Material','Lixas, rolos, trinchas e fita crepe',380),
+    G(addDias(mF(5),5),'Mão de Obra','Diárias – Pintor 1 (exemplo)',1250,{pessoa:'Pintor 1 (exemplo)',tipoPag:'diaria',qtd:10,unidade:'diária',valorUnit:125}),
+    G(addDias(mF(4),5),'Equipe Pintura','Salário – Pintor 2 (exemplo)',2500,{pessoa:'Pintor 2 (exemplo)',tipoPag:'salario'}),G(addDias(mF(3),5),'Equipe Pintura','Salário – Pintor 2 (exemplo)',2500,{pessoa:'Pintor 2 (exemplo)',tipoPag:'salario'}),
+    G(addDias(mI(3),18),'Equipe Pintura','Vale / adiantamento – Pintor 2 (exemplo)',100,{pessoa:'Pintor 2 (exemplo)',tipoPag:'vale'}),G(addDias(mI(2),12),'Alimentação','Almoço da equipe',89),
+    G(addDias(mF(2),5),'Equipe Pintura','Salário – Pintor 2 (exemplo)',2500,{pessoa:'Pintor 2 (exemplo)',tipoPag:'salario'}),G(addDias(mI(1),6),'Aluguel de Equipamento','Andaime – 2 plataformas (1 semana)',64),G(d(1),'Material','50 folhas de lixa de ferro nº 150',50)];
+  const D=(n,ativ,equipe,fotos)=>({id:id(),d:d(n),clima:'Sol',equipe,ativ,ocor:'',fotos:fotos||[]});
+  const diario=[D(9,'Preparação e emassamento das paredes das celas','Pintor 1 / Pintor 2'),D(8,'Textura do muro interno e pintura das paredes internas','Pintor 1 / Pintor 2'),D(7,'Pintura acrílica das paredes do pavilhão 1','Pintor 1 / Pintor 2'),
+    D(6,'Pintura das grades das celas (esmalte)','Pintor 1 / Pintor 2'),D(5,'Pintura completa do pátio 1\nBase da caixa d\'água 90%\n4 celas entregues 100%','Pintor 1 / Pintor 2'),D(2,'Acabamentos finais e limpeza','Pintor 1 / Pintor 2')];
+  const C=(n,mat,q,un)=>({id:id(),bid:bol[4].id,criadoEm:new Date().toISOString(),d:d(n),it:'',mat,nome:'',obs:'',q,un});
+  const consumos=[C(8,'textura',8,'lata'),C(7,'tinta',4.5,'Balde'),C(6,'esmalte',3,'Galão'),C(5,'tinta',5,'Balde')];
+  const o={id:novoId('obra'),nome:'EXEMPLO – Reforma Unidade de Internação',contratante:'CONSTRUTORA MODELO LTDA',local:'Cidade - MA',valorContrato:val([1008.65,1300,1035.5,5044,237]),dataInicio:mI(5),status:'Em andamento',obs:'Obra de exemplo: pode apagar quando quiser.',orcamento:{'Equipe Pintura':9000,'Mão de Obra':1500,'Material':800},
+    itens:I,boletins:bol,medicoes:med,gastos,diario,
+    presencas:[],consumos,termos:[],ordem:Date.now()};
+  normalizarObra(o);db.obras.push(o);[['Pintor 1 (exemplo)','diaria',125],['Pintor 2 (exemplo)','salario',2500]].forEach(([nome,tipoPag,diaria])=>{if(!db.config.equipe.some(p=>p.nome===nome))db.config.equipe.push({id:novoId('pes'),nome,funcao:'Pintor',tipoPag,diaria,ativo:true,obra:o.id})});
   salvar();db.ui.view='obra';db.ui.obraId=o.id;render();toast('🧪 Obra de exemplo criada. Apague em ⚙️ Opções da obra quando quiser.')}
 const PAPEIS={dono:'Dono',socio:'Sócio',escritorio:'Escritório',engenheiro:'Engenheiro',encarregado:'Encarregado',contador:'Contador'};
 const PAPEL_INFO={socio:'Vê e mexe em tudo, igual ao dono.',escritorio:'Vê e mexe em tudo: obras, gastos, equipe e financeiro.',engenheiro:'Vê só as obras marcadas: diário, material, boletim de medição, orçamento, cronograma e entrega. Não vê gastos, salários nem lucro.',encarregado:'Vê só as obras marcadas: diário e material. Não vê valores.',contador:'Só consulta: não altera nada.'};
