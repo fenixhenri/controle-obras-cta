@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Controle de Aluguéis</title>
+<style>
+:root{--az:#0f3d5e;--az2:#1d6fa5;--vd:#15803d;--vm:#b91c1c;--am:#b45309;--cz:#64748b;--bg:#f1f5f9;--ln:#e2e8f0}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:#0f172a;font-size:15px}
+header{background:linear-gradient(135deg,var(--az),var(--az2));color:#fff;padding:16px 16px 54px}
+header h1{margin:0;font-size:1.3rem}header .sub{opacity:.85;font-size:.85rem;margin-top:2px}
+.sync{float:right;font-size:.72rem;background:rgba(255,255,255,.18);padding:3px 9px;border-radius:99px}
+main{max-width:900px;margin:-40px auto 90px;padding:0 12px}
+.card{background:#fff;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.card h2{margin:0 0 10px;font-size:1.05rem;color:var(--az)}
+.hd{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}.hd h2{margin:0}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}@media(min-width:640px){.kpis{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:#fff;border-radius:14px;padding:12px;border-left:4px solid var(--az2);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.kpi span{display:block;font-size:.7rem;text-transform:uppercase;color:var(--cz);font-weight:700;letter-spacing:.3px}.kpi b{display:block;font-size:1.15rem}.kpi small{display:block;color:var(--cz);font-size:.72rem}
+.k-v{border-color:var(--vd)}.k-v b{color:var(--vd)}.k-r{border-color:var(--vm)}.k-r b{color:var(--vm)}.k-a{border-color:var(--am)}.k-a b{color:var(--am)}
+.btn{border:0;border-radius:10px;padding:9px 14px;font:inherit;font-weight:700;cursor:pointer;background:var(--az2);color:#fff}
+.btn.s{padding:6px 10px;font-size:.82rem}.btn.cz{background:#e2e8f0;color:#0f172a}.btn.vd{background:var(--vd)}.btn.vm{background:#fee2e2;color:var(--vm)}.btn.zap{background:#22c55e}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--ln);display:flex;justify-content:space-around;padding:6px 0 max(6px,env(safe-area-inset-bottom));z-index:20}
+nav button{background:none;border:0;font:inherit;font-size:.72rem;color:var(--cz);display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 10px;border-radius:10px;cursor:pointer}
+nav button i{font-style:normal;font-size:1.3rem}nav button.on{color:var(--az);background:#e0f2fe;font-weight:700}
+.mes{display:flex;align-items:center;gap:6px}.mes select{border:1px solid var(--ln);border-radius:9px;padding:7px;font:inherit}
+.it{border:1px solid var(--ln);border-radius:12px;padding:11px;margin-bottom:8px}
+.it .t{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.it .t b{font-size:1rem}
+.obs{color:var(--cz);font-size:.82rem}.val{font-weight:800;white-space:nowrap}
+.tag{display:inline-block;border-radius:99px;padding:2px 9px;font-size:.72rem;font-weight:800}
+.tg-pg{background:#dcfce7;color:var(--vd)}.tg-at{background:#fee2e2;color:var(--vm)}.tg-ab{background:#fef3c7;color:var(--am)}.tg-vg{background:#e2e8f0;color:#334155}
+.acs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:.86rem}th{background:var(--az);color:#fff;text-align:left;padding:7px;font-size:.75rem}td{padding:7px;border-bottom:1px solid var(--ln)}.r{text-align:right}tfoot td{font-weight:800;background:#f8fafc}
+.tw{overflow-x:auto}
+.vazio{text-align:center;color:var(--cz);padding:26px 10px}
+.mb{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:flex-end;justify-content:center;z-index:50}.mb.on{display:flex}
+@media(min-width:640px){.mb{align-items:center}}
+.md{background:#fff;width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px}@media(min-width:640px){.md{border-radius:18px}}
+.md h3{margin:0 0 10px;color:var(--az)}
+label{display:block;font-size:.72rem;font-weight:700;color:var(--cz);text-transform:uppercase;margin:9px 0 3px}
+input,select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:9px;font:inherit;background:#fff}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.bar{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 16px;border-radius:12px;font-size:.88rem;z-index:60;display:none}
+.rec{border:2px solid var(--az);border-radius:12px;padding:16px;line-height:1.6}.rec h4{text-align:center;margin:0 0 8px;color:var(--az);letter-spacing:1px}
+.demo{background:#fef3c7;color:#92400e;border-radius:12px;padding:9px 12px;font-size:.82rem;margin-bottom:12px}
+</style>
+</head>
+<body>
+<header><span class="sync" id="sync">…</span><h1>🏠 Controle de Aluguéis</h1><div class="sub">Casas, inquilinos, pagamentos e despesas</div></header>
+<main id="app"><div class="card vazio">Carregando…</div></main>
+<nav id="nav"></nav>
+<div class="mb" id="mb"><div class="md" id="md"></div></div>
+<div class="toast" id="toast"></div>
+<script>
+const $=id=>document.getElementById(id);
+const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const CATS=['IPTU','Água','Luz','Manutenção','Reforma','Condomínio','Seguro','Imobiliária','Outros'];
+const FORMAS=['Pix','Dinheiro','Transferência','Boleto'];
+let D={casas:[],pags:[],desp:[],dono:''},db=null,docRef=null,ui={aba:'painel',mes:new Date().toISOString().slice(0,7)},salvando=false,fila=false;
+const fm=v=>(+v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const fd=s=>s?String(s).slice(0,10).split('-').reverse().join('/'):'';
+const hoje=()=>new Date().toISOString().slice(0,10);
+const id=p=>p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const esc=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pm=s=>{s=String(s||'').replace(/[^\d,.-]/g,'');if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');return +s||0};
+const nomeMes=k=>{const[y,m]=k.split('-');return MESES[+m-1]+'/'+y};
+function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2600)}
+function sync(t){$('sync').textContent=t}
+/* ---------- armazenamento ---------- */
+function lsGet(){try{const s=localStorage.getItem('alugueis_demo');return s?JSON.parse(s):null}catch(e){return null}}
+function lsSet(){try{localStorage.setItem('alugueis_demo',JSON.stringify(D))}catch(e){}}
+async function salvar(){lsSet();render();if(!docRef){sync('Salvo neste aparelho');return}
+  if(salvando){fila=true;return}salvando=true;sync('Salvando…');
+  try{await docRef.set(JSON.parse(JSON.stringify(D)));sync('☁️ Salvo na nuvem')}catch(e){sync('⚠️ Não salvou');toast('Não foi possível salvar na nuvem. Verifique a internet.')}
+  salvando=false;if(fila){fila=false;salvar()}}
+async function iniciar(){const l=lsGet();if(l)D={...D,...l};render();
+  const t=setTimeout(()=>{if(!docRef)sync('Salvo neste aparelho')},10000);
+  try{db=window.claude&&window.claude.use?await window.claude.use('db'):null}catch(e){db=null}
+  if(!db){clearTimeout(t);sync('Salvo neste aparelho');return}
+  docRef=db.doc('app/dados');
+  try{const s=await docRef.get();clearTimeout(t);if(s.exists){D={casas:[],pags:[],desp:[],dono:'',...s.data()};lsSet()}sync('☁️ Salvo na nuvem');render()}catch(e){clearTimeout(t);docRef=null;sync('Salvo neste aparelho')}}
+/* ---------- regras ---------- */
+const casa=cid=>D.casas.find(c=>c.id===cid);
+function ativa(c,k){if(!c.inquilino||!c.valor)return false;const ini=(c.inicio||'').slice(0,7),fim=(c.fim||'').slice(0,7);if(ini&&k<ini)return false;if(fim&&k>fim&&!c.renova)return false;return true}
+function venc(c,k){const[y,m]=k.split('-').map(Number);const dmax=new Date(y,m,0).getDate();return k+'-'+String(Math.min(+c.dia||5,dmax)).padStart(2,'0')}
+function pagosDe(cid,k){return D.pags.filter(p=>p.cid===cid&&p.ref===k)}
+function situacao(c,k){if(!ativa(c,k))return{st:'vaga',pago:0,falta:0};const pago=pagosDe(c.id,k).reduce((t,p)=>t+(+p.valor||0),0),total=+c.valor||0,falta=Math.max(0,total-pago);
+  if(falta<=0.005)return{st:'pago',pago,falta:0,total};const v=venc(c,k);return{st:hoje()>v?'atraso':'aberto',pago,falta,total,venc:v,dias:Math.floor((new Date(hoje())-new Date(v))/864e5)}}
+const TAG={pago:'<span class="tag tg-pg">✅ Pago</span>',atraso:'<span class="tag tg-at">⚠️ Em atraso</span>',aberto:'<span class="tag tg-ab">⏳ A vencer</span>',vaga:'<span class="tag tg-vg">Vaga</span>'};
+function mesesAte(k,n){const L=[];let[y,m]=k.split('-').map(Number);for(let i=0;i<n;i++){L.unshift(y+'-'+String(m).padStart(2,'0'));m--;if(!m){m=12;y--}}return L}
+function atrasosTodos(){const L=[];D.casas.forEach(c=>{mesesAte(hoje().slice(0,7),12).forEach(k=>{const s=situacao(c,k);if(s.st==='atraso')L.push({c,k,s})})});return L}
+/* ---------- telas ---------- */
+const ABAS=[['painel','📊','Painel'],['casas','🏠','Casas'],['pags','💵','Pagamentos'],['desp','🧾','Despesas'],['rel','📈','Relatório']];
+function render(){$('nav').innerHTML=ABAS.map(([k,i,t])=>`<button class="${ui.aba===k?'on':''}" onclick="ir('${k}')"><i>${i}</i>${t}</button>`).join('');
+  const f={painel:rPainel,casas:rCasas,pags:rPags,desp:rDesp,rel:rRel}[ui.aba];$('app').innerHTML=f()}
+function ir(a){ui.aba=a;render();window.scrollTo(0,0)}
+function selMes(){const L=mesesAte(hoje().slice(0,7).replace(/(\d+)-(\d+)/,(a,y,m)=>{let mm=+m+2,yy=+y;if(mm>12){mm-=12;yy++}return yy+'-'+String(mm).padStart(2,'0')}),18).reverse();if(!L.includes(ui.mes))L.push(ui.mes);
+  return `<div class="mes"><select onchange="ui.mes=this.value;render()">${L.map(k=>`<option value="${k}" ${k===ui.mes?'selected':''}>${nomeMes(k)}</option>`).join('')}</select></div>`}
+function vazioCasas(){return `<div class="card vazio">Nenhuma casa cadastrada ainda.<br><br><button class="btn" onclick="abrirCasa()">+ Cadastrar a primeira casa</button><br><br><button class="btn cz s" onclick="exemplo()">Ver com dados de exemplo</button></div>`}
+function rPainel(){if(!D.casas.length)return vazioCasas();const k=ui.mes;
+  let esp=0,rec=0,atr=0,abe=0,ocup=0;const L=D.casas.map(c=>{const s=situacao(c,k);if(s.st!=='vaga'){ocup++;esp+=s.total;rec+=s.pago;if(s.st==='atraso')atr+=s.falta;if(s.st==='aberto')abe+=s.falta}return{c,s}});
+  const dsp=D.desp.filter(x=>String(x.data).startsWith(k)).reduce((t,x)=>t+(+x.valor||0),0);const AT=atrasosTodos().filter(x=>x.k!==k);
+  return `${D.casas.some(c=>c.exemplo)?'<div class="demo">📌 Você está vendo <b>dados de exemplo</b>. <a href="#" onclick="limparExemplo();return false">Apagar o exemplo e começar</a></div>':''}
+  <div class="card"><div class="hd"><h2>📅 ${nomeMes(k)}</h2>${selMes()}</div>
+  <div class="kpis"><div class="kpi"><span>Previsto no mês</span><b>${fm(esp)}</b><small>${ocup} de ${D.casas.length} casas alugadas</small></div>
+  <div class="kpi k-v"><span>Recebido</span><b>${fm(rec)}</b><small>${esp?Math.round(rec/esp*100):0}% do previsto</small></div>
+  <div class="kpi k-r"><span>Em atraso</span><b>${fm(atr)}</b><small>${abe?fm(abe)+' ainda a vencer':'—'}</small></div>
+  <div class="kpi k-a"><span>Lucro do mês</span><b>${fm(rec-dsp)}</b><small>despesas ${fm(dsp)}</small></div></div></div>
+  <div class="card"><h2>🏠 Situação de cada casa</h2>${L.map(({c,s})=>`<div class="it"><div class="t"><div><b>${esc(c.nome)}</b> ${TAG[s.st]}<div class="obs">${s.st==='vaga'?'Sem inquilino neste mês':esc(c.inquilino)+' · vence dia '+(c.dia||5)}</div>
+    ${s.st==='atraso'?`<div class="obs" style="color:var(--vm)">${s.dias} dia(s) de atraso · falta ${fm(s.falta)}</div>`:s.pago&&s.falta?`<div class="obs">pago ${fm(s.pago)} · falta ${fm(s.falta)}</div>`:''}</div><div class="val">${s.st==='vaga'?'—':fm(s.total)}</div></div>
+    ${s.st==='vaga'?'':`<div class="acs">${s.st!=='pago'?`<button class="btn vd s" onclick="abrirPag('${c.id}','${k}')">💵 Receber</button><button class="btn zap s" onclick="cobrar('${c.id}','${k}')">📲 Cobrar</button>`:`<button class="btn cz s" onclick="recibo('${c.id}','${k}')">🧾 Recibo</button>`}</div>`}</div>`).join('')}</div>
+  ${AT.length?`<div class="card"><h2>⚠️ Atrasos de meses anteriores</h2>${AT.map(({c,k:m,s})=>`<div class="it"><div class="t"><div><b>${esc(c.nome)}</b> · ${nomeMes(m)}<div class="obs">${esc(c.inquilino)} · ${s.dias} dias de atraso</div></div><div class="val" style="color:var(--vm)">${fm(s.falta)}</div></div><div class="acs"><button class="btn vd s" onclick="abrirPag('${c.id}','${m}')">💵 Receber</button><button class="btn zap s" onclick="cobrar('${c.id}','${m}')">📲 Cobrar</button></div></div>`).join('')}</div>`:''}
+  <div class="card"><div class="hd"><h2>⚙️ Dados do proprietário</h2></div><label>Nome que sai no recibo</label><input value="${esc(D.dono)}" placeholder="Ex: José da Silva" onchange="D.dono=this.value.trim();salvar()"></div>`}
+function rCasas(){return `<div class="card"><div class="hd"><h2>🏠 Casas e contratos</h2><button class="btn s" onclick="abrirCasa()">+ Casa</button></div>
+  ${D.casas.length?D.casas.map(c=>{const s=situacao(c,hoje().slice(0,7)),venceu=c.fim&&c.fim<hoje(),perto=c.fim&&!venceu&&(new Date(c.fim)-new Date())/864e5<=60;return `<div class="it"><div class="t"><div><b>${esc(c.nome)}</b> ${TAG[s.st]}<div class="obs">${esc(c.endereco||'')}</div>
+    <div class="obs">${c.inquilino?'👤 '+esc(c.inquilino)+(c.tel?' · '+esc(c.tel):''):'Sem inquilino'}</div>
+    ${c.inquilino?`<div class="obs">📄 Contrato ${fd(c.inicio)||'—'} a ${fd(c.fim)||'indeterminado'} · vence dia ${c.dia||5}${c.caucao?' · caução '+fm(c.caucao):''}</div>`:''}
+    ${venceu?'<div class="obs" style="color:var(--vm)">⚠️ Contrato vencido – renove ou encerre</div>':perto?'<div class="obs" style="color:var(--am)">⏰ Contrato vence em menos de 60 dias</div>':''}</div><div class="val">${c.valor?fm(c.valor):'—'}</div></div>
+    <div class="acs"><button class="btn cz s" onclick="abrirCasa('${c.id}')">✏️ Editar</button>${c.inquilino?`<button class="btn cz s" onclick="encerrar('${c.id}')">🔚 Encerrar contrato</button>`:''}<button class="btn vm s" onclick="excluirCasa('${c.id}')">🗑️</button></div></div>`}).join(''):'<div class="vazio">Nenhuma casa cadastrada.</div>'}</div>
+  ${D.casas.some(c=>(c.hist||[]).length)?`<div class="card"><h2>📚 Inquilinos anteriores</h2>${D.casas.flatMap(c=>(c.hist||[]).map(h=>`<div class="obs" style="padding:4px 0">${esc(c.nome)} – <b>${esc(h.inquilino)}</b> · ${fd(h.inicio)} a ${fd(h.fim)} · ${fm(h.valor)}</div>`)).join('')}</div>`:''}`}
+function rPags(){const k=ui.mes,L=D.pags.filter(p=>p.ref===k).sort((a,b)=>String(b.data).localeCompare(a.data)),t=L.reduce((s,p)=>s+(+p.valor||0),0);
+  return `<div class="card"><div class="hd"><h2>💵 Pagamentos recebidos</h2>${selMes()}</div><button class="btn s" onclick="abrirPag()" ${D.casas.length?'':'disabled'}>+ Registrar pagamento</button>
+  ${L.length?`<div class="tw" style="margin-top:10px"><table><thead><tr><th>Data</th><th>Casa / inquilino</th><th>Forma</th><th class="r">Valor</th><th></th></tr></thead><tbody>${L.map(p=>{const c=casa(p.cid)||{};return `<tr><td>${fd(p.data)}</td><td><b>${esc(c.nome||'?')}</b><div class="obs">${esc(p.inquilino||c.inquilino||'')}${p.obs?' · '+esc(p.obs):''}</div></td><td>${esc(p.forma||'')}</td><td class="r">${fm(p.valor)}</td><td style="white-space:nowrap"><button class="btn cz s" onclick="recibo('${p.cid}','${p.ref}')">🧾</button> <button class="btn vm s" onclick="excluirPag('${p.id}')">🗑️</button></td></tr>`}).join('')}</tbody><tfoot><tr><td colspan="3">Total recebido em ${nomeMes(k)}</td><td class="r">${fm(t)}</td><td></td></tr></tfoot></table></div>`:'<div class="vazio">Nenhum pagamento lançado neste mês.</div>'}</div>`}
+function rDesp(){const k=ui.mes,L=D.desp.filter(x=>String(x.data).startsWith(k)).sort((a,b)=>String(b.data).localeCompare(a.data)),t=L.reduce((s,x)=>s+(+x.valor||0),0);
+  return `<div class="card"><div class="hd"><h2>🧾 Despesas das casas</h2>${selMes()}</div><button class="btn s" onclick="abrirDesp()" ${D.casas.length?'':'disabled'}>+ Lançar despesa</button>
+  ${L.length?`<div class="tw" style="margin-top:10px"><table><thead><tr><th>Data</th><th>Casa</th><th>Despesa</th><th class="r">Valor</th><th></th></tr></thead><tbody>${L.map(x=>`<tr><td>${fd(x.data)}</td><td>${esc((casa(x.cid)||{}).nome||'Geral')}</td><td><b>${esc(x.cat)}</b>${x.desc?'<div class="obs">'+esc(x.desc)+'</div>':''}</td><td class="r">${fm(x.valor)}</td><td><button class="btn cz s" onclick="abrirDesp('${x.id}')">✏️</button> <button class="btn vm s" onclick="excluirDesp('${x.id}')">🗑️</button></td></tr>`).join('')}</tbody><tfoot><tr><td colspan="3">Total de despesas em ${nomeMes(k)}</td><td class="r">${fm(t)}</td><td></td></tr></tfoot></table></div>`:'<div class="vazio">Nenhuma despesa neste mês.</div>'}</div>`}
+function rRel(){const anos=[...new Set([new Date().getFullYear(),...D.pags.map(p=>+String(p.ref).slice(0,4)),...D.desp.map(x=>+String(x.data).slice(0,4))])].filter(Boolean).sort((a,b)=>b-a);const a=ui.ano||anos[0];
+  const R=D.casas.map(c=>{const rec=D.pags.filter(p=>p.cid===c.id&&String(p.ref).startsWith(a)).reduce((t,p)=>t+(+p.valor||0),0),dsp=D.desp.filter(x=>x.cid===c.id&&String(x.data).startsWith(a)).reduce((t,x)=>t+(+x.valor||0),0);let atr=0;for(let m=1;m<=12;m++){const k=a+'-'+String(m).padStart(2,'0');if(k>hoje().slice(0,7))break;const s=situacao(c,k);if(s.st==='atraso')atr+=s.falta}return{c,rec,dsp,atr,luc:rec-dsp}});
+  const T=k=>R.reduce((t,x)=>t+x[k],0);
+  const meses=[...Array(12)].map((_,i)=>{const k=a+'-'+String(i+1).padStart(2,'0');return{k,rec:D.pags.filter(p=>p.ref===k).reduce((t,p)=>t+(+p.valor||0),0),dsp:D.desp.filter(x=>String(x.data).startsWith(k)).reduce((t,x)=>t+(+x.valor||0),0)}});
+  return `<div class="card"><div class="hd"><h2>📈 Resultado por casa</h2><select style="width:auto" onchange="ui.ano=+this.value;render()">${anos.map(y=>`<option ${y==a?'selected':''}>${y}</option>`).join('')}</select></div>
+  <div class="kpis"><div class="kpi k-v"><span>Recebido no ano</span><b>${fm(T('rec'))}</b></div><div class="kpi k-a"><span>Despesas no ano</span><b>${fm(T('dsp'))}</b></div><div class="kpi"><span>Lucro no ano</span><b>${fm(T('luc'))}</b></div><div class="kpi k-r"><span>Em atraso</span><b>${fm(T('atr'))}</b></div></div>
+  <div class="tw" style="margin-top:12px"><table><thead><tr><th>Casa</th><th class="r">Recebido</th><th class="r">Despesas</th><th class="r">Lucro</th><th class="r">Atraso</th></tr></thead><tbody>${R.map(x=>`<tr><td><b>${esc(x.c.nome)}</b></td><td class="r">${fm(x.rec)}</td><td class="r">${fm(x.dsp)}</td><td class="r"><b>${fm(x.luc)}</b></td><td class="r" style="color:${x.atr?'var(--vm)':'inherit'}">${x.atr?fm(x.atr):'—'}</td></tr>`).join('')}</tbody><tfoot><tr><td>Total</td><td class="r">${fm(T('rec'))}</td><td class="r">${fm(T('dsp'))}</td><td class="r">${fm(T('luc'))}</td><td class="r">${fm(T('atr'))}</td></tr></tfoot></table></div></div>
+  <div class="card"><h2>📅 Mês a mês – ${a}</h2><div class="tw"><table><thead><tr><th>Mês</th><th class="r">Recebido</th><th class="r">Despesas</th><th class="r">Lucro</th></tr></thead><tbody>${meses.map(m=>`<tr><td>${MESES[+m.k.slice(5)-1]}</td><td class="r">${m.rec?fm(m.rec):'—'}</td><td class="r">${m.dsp?fm(m.dsp):'—'}</td><td class="r"><b>${m.rec||m.dsp?fm(m.rec-m.dsp):'—'}</b></td></tr>`).join('')}</tbody></table></div></div>
+  <div class="card"><h2>💾 Cópia de segurança</h2><div class="obs">Copie os dados para guardar ou passar para outro aparelho.</div><div class="acs"><button class="btn cz s" onclick="copiarBackup()">📋 Copiar dados</button><button class="btn cz s" onclick="abrirImport()">📥 Colar dados</button></div></div>`}
+/* ---------- modais ---------- */
+function modal(h){$('md').innerHTML=h;$('mb').classList.add('on')}
+function fechar(){$('mb').classList.remove('on')}
+$('mb').addEventListener('click',e=>{if(e.target.id==='mb')fechar()});
+function confirmar(msg,fn){modal(`<h3>Confirmar</h3><p>${msg}</p><div class="bar"><button class="btn cz" onclick="fechar()">Cancelar</button><button class="btn vm" id="okC">Confirmar</button></div>`);$('okC').onclick=()=>{fechar();fn()}}
+function abrirCasa(cid){const c=cid?casa(cid):{};modal(`<h3>${cid?'Editar':'Nova'} casa</h3>
+  <label>Nome / identificação</label><input id="cNome" value="${esc(c.nome||'')}" placeholder="Ex: Casa 1 – Rua das Flores">
+  <label>Endereço</label><input id="cEnd" value="${esc(c.endereco||'')}">
+  <h3 style="margin-top:16px;font-size:.95rem">👤 Inquilino e contrato</h3>
+  <label>Nome do inquilino</label><input id="cInq" value="${esc(c.inquilino||'')}" placeholder="Deixe vazio se a casa estiver vaga">
+  <div class="g2"><div><label>Telefone (WhatsApp)</label><input id="cTel" inputmode="tel" value="${esc(c.tel||'')}" placeholder="(99) 99999-9999"></div><div><label>CPF</label><input id="cCpf" value="${esc(c.cpf||'')}"></div></div>
+  <div class="g2"><div><label>Valor do aluguel (R$)</label><input id="cVal" inputmode="decimal" value="${c.valor?String(c.valor).replace('.',','):''}"></div><div><label>Dia do vencimento</label><input id="cDia" type="number" min="1" max="31" value="${c.dia||5}"></div></div>
+  <div class="g2"><div><label>Início do contrato</label><input id="cIni" type="date" value="${c.inicio||''}"></div><div><label>Fim do contrato</label><input id="cFim" type="date" value="${c.fim||''}"></div></div>
+  <div class="g2"><div><label>Caução (R$)</label><input id="cCau" inputmode="decimal" value="${c.caucao?String(c.caucao).replace('.',','):''}"></div><div><label>Após o fim</label><select id="cRen"><option value="1" ${c.renova!==false?'selected':''}>Continua cobrando</option><option value="0" ${c.renova===false?'selected':''}>Para de cobrar</option></select></div></div>
+  <label>Observações</label><textarea id="cObs" rows="2">${esc(c.obs||'')}</textarea>
+  <div class="bar"><button class="btn cz" onclick="fechar()">Cancelar</button><button class="btn" onclick="salvarCasa('${cid||''}')">Salvar</button></div>`)}
+function salvarCasa(cid){const nome=$('cNome').value.trim();if(!nome){toast('Informe o nome da casa.');return}
+  const v={nome,endereco:$('cEnd').value.trim(),inquilino:$('cInq').value.trim(),tel:$('cTel').value.trim(),cpf:$('cCpf').value.trim(),valor:pm($('cVal').value),dia:Math.min(31,Math.max(1,+$('cDia').value||5)),inicio:$('cIni').value,fim:$('cFim').value,caucao:pm($('cCau').value),renova:$('cRen').value==='1',obs:$('cObs').value.trim()};
+  if(v.inquilino&&!v.valor){toast('Informe o valor do aluguel.');return}
+  if(cid)Object.assign(casa(cid),v);else D.casas.push({id:id('c'),hist:[],...v});fechar();salvar();toast('✅ Casa salva')}
+function encerrar(cid){const c=casa(cid);confirmar(`Encerrar o contrato de <b>${esc(c.inquilino)}</b> em ${esc(c.nome)}? Os pagamentos ficam guardados e a casa fica vaga.`,()=>{(c.hist=c.hist||[]).push({inquilino:c.inquilino,inicio:c.inicio,fim:hoje(),valor:c.valor});Object.assign(c,{inquilino:'',tel:'',cpf:'',inicio:'',fim:'',caucao:0});salvar();toast('Contrato encerrado')})}
+function excluirCasa(cid){const c=casa(cid);confirmar(`Excluir <b>${esc(c.nome)}</b> com todos os pagamentos e despesas dela?`,()=>{D.casas=D.casas.filter(x=>x.id!==cid);D.pags=D.pags.filter(p=>p.cid!==cid);D.desp=D.desp.filter(x=>x.cid!==cid);salvar()})}
+function abrirPag(cid,k){const C=D.casas.filter(c=>c.inquilino);if(!C.length){toast('Cadastre uma casa com inquilino.');return}cid=cid||C[0].id;k=k||ui.mes;const s=situacao(casa(cid),k);
+  modal(`<h3>💵 Registrar pagamento</h3><label>Casa</label><select id="pC" onchange="pgSug()">${C.map(c=>`<option value="${c.id}" ${c.id===cid?'selected':''}>${esc(c.nome)} – ${esc(c.inquilino)}</option>`).join('')}</select>
+  <div class="g2"><div><label>Mês de referência</label><input id="pRef" type="month" value="${k}" onchange="pgSug()"></div><div><label>Data do pagamento</label><input id="pData" type="date" value="${hoje()}"></div></div>
+  <div class="g2"><div><label>Valor recebido (R$)</label><input id="pVal" inputmode="decimal" value="${(s.falta||s.total||0).toFixed(2).replace('.',',')}"></div><div><label>Forma</label><select id="pForma">${FORMAS.map(f=>`<option>${f}</option>`).join('')}</select></div></div>
+  <label>Observação</label><input id="pObs" placeholder="Ex: pagou com 2 dias de atraso">
+  <div class="bar"><button class="btn cz" onclick="fechar()">Cancelar</button><button class="btn vd" onclick="salvarPag()">Salvar</button></div>`)}
+function pgSug(){const c=casa($('pC').value),s=situacao(c,$('pRef').value);$('pVal').value=(s.falta||s.total||0).toFixed(2).replace('.',',')}
+function salvarPag(){const cid=$('pC').value,c=casa(cid),v=pm($('pVal').value);if(!v){toast('Informe o valor.');return}
+  D.pags.push({id:id('p'),cid,ref:$('pRef').value,data:$('pData').value||hoje(),valor:v,forma:$('pForma').value,obs:$('pObs').value.trim(),inquilino:c.inquilino});fechar();salvar();toast('✅ Pagamento registrado')}
+function excluirPag(pid){confirmar('Excluir este pagamento?',()=>{D.pags=D.pags.filter(p=>p.id!==pid);salvar()})}
+function abrirDesp(did){const x=did?D.desp.find(y=>y.id===did):{};modal(`<h3>🧾 ${did?'Editar':'Lançar'} despesa</h3>
+  <label>Casa</label><select id="dC">${D.casas.map(c=>`<option value="${c.id}" ${c.id===x.cid?'selected':''}>${esc(c.nome)}</option>`).join('')}</select>
+  <div class="g2"><div><label>Tipo</label><select id="dCat">${CATS.map(c=>`<option ${c===x.cat?'selected':''}>${c}</option>`).join('')}</select></div><div><label>Data</label><input id="dData" type="date" value="${x.data||hoje()}"></div></div>
+  <label>Valor (R$)</label><input id="dVal" inputmode="decimal" value="${x.valor?String(x.valor).replace('.',','):''}">
+  <label>Descrição</label><input id="dDesc" value="${esc(x.desc||'')}" placeholder="Ex: troca da torneira da cozinha">
+  <div class="bar"><button class="btn cz" onclick="fechar()">Cancelar</button><button class="btn" onclick="salvarDesp('${did||''}')">Salvar</button></div>`)}
+function salvarDesp(did){const v=pm($('dVal').value);if(!v){toast('Informe o valor.');return}const d={cid:$('dC').value,cat:$('dCat').value,data:$('dData').value||hoje(),valor:v,desc:$('dDesc').value.trim()};
+  if(did)Object.assign(D.desp.find(x=>x.id===did),d);else D.desp.push({id:id('d'),...d});fechar();salvar();toast('✅ Despesa salva')}
+function excluirDesp(did){confirmar('Excluir esta despesa?',()=>{D.desp=D.desp.filter(x=>x.id!==did);salvar()})}
+/* ---------- recibo e cobrança ---------- */
+function extenso(v){const u=['','um','dois','três','quatro','cinco','seis','sete','oito','nove','dez','onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'],d=['','','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'],c=['','cento','duzentos','trezentos','quatrocentos','quinhentos','seiscentos','setecentos','oitocentos','novecentos'];
+  const ate999=n=>{if(n===100)return 'cem';const p=[];if(n>=100){p.push(c[Math.floor(n/100)]);n%=100}if(n>=20){p.push(d[Math.floor(n/10)]+(n%10?' e '+u[n%10]:''));}else if(n)p.push(u[n]);return p.join(' e ')};
+  const r=Math.floor(v),ct=Math.round((v-r)*100);let s='';const mil=Math.floor(r/1000),resto=r%1000;if(mil)s+=(mil===1?'mil':ate999(mil)+' mil');if(resto)s+=(s?(resto<100||resto%100===0?' e ':' '):'')+ate999(resto);s=(s||'zero')+(r===1?' real':' reais');if(ct)s+=' e '+ate999(ct)+(ct===1?' centavo':' centavos');return s}
+function recibo(cid,k){const c=casa(cid),P=pagosDe(cid,k);if(!P.length){toast('Nenhum pagamento neste mês.');return}const v=P.reduce((t,p)=>t+(+p.valor||0),0),ult=P.map(p=>p.data).sort().pop(),inq=P[0].inquilino||c.inquilino;
+  const txt=`🧾 *RECIBO DE ALUGUEL*\n\nRecebi de *${inq}* a quantia de *${fm(v)}* (${extenso(v)}), referente ao aluguel de *${nomeMes(k)}* do imóvel *${c.nome}*${c.endereco?' – '+c.endereco:''}.\n\nData do pagamento: ${fd(ult)}\n\n${D.dono||'Proprietário'}`;
+  modal(`<h3>🧾 Recibo de aluguel</h3><div class="rec"><h4>RECIBO DE ALUGUEL</h4><div style="text-align:right;font-weight:800;font-size:1.1rem">${fm(v)}</div>
+  <p>Recebi de <b>${esc(inq)}</b>${c.cpf?', CPF '+esc(c.cpf):''}, a quantia de <b>${fm(v)}</b> (${extenso(v)}), referente ao aluguel do mês de <b>${nomeMes(k)}</b> do imóvel <b>${esc(c.nome)}</b>${c.endereco?', situado em '+esc(c.endereco):''}.</p>
+  <p>Pagamento em ${fd(ult)} · ${esc([...new Set(P.map(p=>p.forma))].join(', '))}.</p>
+  <p>Para clareza, firmo o presente recibo.</p><div style="margin-top:34px;border-top:1px solid #334155;text-align:center;padding-top:4px"><b>${esc(D.dono||'Proprietário')}</b></div></div>
+  <div class="bar"><button class="btn cz" onclick="fechar()">Fechar</button><button class="btn cz" onclick="copiar(${JSON.stringify(txt).replace(/"/g,'&quot;')})">📋 Copiar</button>${zapLink(c.tel,txt,'📲 Enviar ao inquilino')}</div>`)}
+function zapLink(tel,txt,rot){let t=String(tel||'').replace(/\D/g,'');if(t&&t.length<=11)t='55'+t;return `<a class="btn zap" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${t}?text=${encodeURIComponent(txt)}">${rot}</a>`}
+function cobrar(cid,k){const c=casa(cid),s=situacao(c,k);const txt=s.st==='atraso'?`Olá, ${c.inquilino.split(' ')[0]}! Tudo bem? 😊\n\nPassando para lembrar que o aluguel de *${nomeMes(k)}* do imóvel *${c.nome}* venceu em *${fd(s.venc)}* e ainda está em aberto.\n\nValor: *${fm(s.falta)}*\n\nAssim que fizer o pagamento, me envie o comprovante, por favor. Obrigado!`:`Olá, ${c.inquilino.split(' ')[0]}! Tudo bem? 😊\n\nLembrete: o aluguel de *${nomeMes(k)}* do imóvel *${c.nome}* vence em *${fd(s.venc)}*.\n\nValor: *${fm(s.falta)}*\n\nObrigado!`;
+  modal(`<h3>📲 Mensagem de cobrança</h3><textarea id="zTxt" rows="9">${esc(txt)}</textarea>${c.tel?'':'<div class="obs" style="margin-top:6px">Cadastre o telefone do inquilino na casa para abrir direto a conversa dele.</div>'}
+  <div class="bar"><button class="btn cz" onclick="fechar()">Fechar</button><button class="btn cz" onclick="copiar($('zTxt').value)">📋 Copiar</button><a class="btn zap" style="text-decoration:none" target="_blank" rel="noopener" href="#" onclick="this.href='https://wa.me/${(()=>{let t=String(c.tel||'').replace(/\D/g,'');return t&&t.length<=11?'55'+t:t})()}?text='+encodeURIComponent($('zTxt').value)">📲 Abrir WhatsApp</a></div>`)}
+async function copiar(t){try{await navigator.clipboard.writeText(t);toast('📋 Copiado')}catch(e){toast('Não consegui copiar. Selecione e copie o texto.')}}
+function copiarBackup(){copiar(JSON.stringify(D))}
+function abrirImport(){modal(`<h3>📥 Colar dados</h3><div class="obs">Cole aqui os dados copiados. Isso substitui tudo que está no programa.</div><textarea id="iTxt" rows="8"></textarea><div class="bar"><button class="btn cz" onclick="fechar()">Cancelar</button><button class="btn vm" onclick="importar()">Substituir</button></div>`)}
+function importar(){try{const j=JSON.parse($('iTxt').value);if(!Array.isArray(j.casas))throw 0;D={casas:[],pags:[],desp:[],dono:'',...j};fechar();salvar();toast('✅ Dados restaurados')}catch(e){toast('Esses dados não são válidos.')}}
+/* ---------- exemplo ---------- */
+function exemplo(){const k=hoje().slice(0,7),M=mesesAte(k,4),ini=M[0]+'-01';
+  const C=[{nome:'Casa 1 – Rua São José',endereco:'Rua São José, 120 – Centro',inquilino:'Maria das Graças Silva',tel:'(99) 98111-2233',valor:800,dia:5},
+   {nome:'Casa 2 – Rua Projetada',endereco:'Rua Projetada, 45 – Bairro Novo',inquilino:'João Pereira Lima',tel:'(99) 98222-3344',valor:650,dia:10},
+   {nome:'Casa 3 – Av. Principal',endereco:'Av. Principal, 310',inquilino:'Ana Paula Costa',tel:'(99) 98333-4455',valor:1200,dia:15},
+   {nome:'Kitnet 4',endereco:'Rua do Comércio, 18 – fundos',inquilino:'',valor:450,dia:5}].map(c=>({id:id('c'),hist:[],inicio:c.inquilino?ini:'',fim:c.inquilino?(+ini.slice(0,4)+1)+ini.slice(4):'',caucao:c.inquilino?c.valor:0,renova:true,exemplo:true,cpf:'',obs:'',...c}));
+  const P=[];C.filter(c=>c.inquilino).forEach((c,i)=>M.forEach((m,j)=>{const ultimo=j===M.length-1;if(ultimo&&i>0)return;if(i===1&&j===M.length-2)return;P.push({id:id('p'),cid:c.id,ref:m,data:m+'-'+String(c.dia).padStart(2,'0'),valor:c.valor,forma:j%2?'Dinheiro':'Pix',obs:'',inquilino:c.inquilino})}));
+  const X=[{cid:C[0].id,cat:'Manutenção',data:M[2]+'-12',valor:180,desc:'Troca do chuveiro'},{cid:C[2].id,cat:'IPTU',data:M[1]+'-20',valor:95,desc:'Parcela do IPTU'},{cid:C[3].id,cat:'Reforma',data:k+'-03',valor:620,desc:'Pintura para novo inquilino'}].map(x=>({id:id('d'),...x}));
+  D={casas:C,pags:P,desp:X,dono:D.dono||''};salvar();toast('Dados de exemplo carregados')}
+function limparExemplo(){confirmar('Apagar todos os dados de exemplo?',()=>{const ids=D.casas.filter(c=>c.exemplo).map(c=>c.id);D.casas=D.casas.filter(c=>!c.exemplo);D.pags=D.pags.filter(p=>!ids.includes(p.cid));D.desp=D.desp.filter(x=>!ids.includes(x.cid));salvar()})}
+iniciar();
+</script>
+</body>
+</html>
